@@ -1,21 +1,21 @@
 import {
   LayoutDashboard,
-  BookOpen,
   MessageSquare,
   Calendar,
   Clock,
   User,
   LogOut,
+  Dumbbell,
 } from 'lucide-react';
 import { currentStudent } from '../../data/mockData';
 import catalystLogo from '../../assets/catalyst-logo.png';
 
 const NAV_ITEMS = [
   { id: 'dashboard',     label: 'Dashboard',      icon: LayoutDashboard },
-  { id: 'assignments',   label: 'Assignments',     icon: BookOpen,        badge: 1 },
   { id: 'sessions',      label: 'My Sessions',     icon: Calendar },
   { id: 'slots',         label: 'Book a Slot',     icon: Clock },
   { id: 'communication', label: 'Communication',   icon: MessageSquare,   badge: 2 },
+  { id: 'practiceTime',  label: 'Practice Time',   icon: Dumbbell },
   { id: 'profile',       label: 'My Profile',      icon: User },
 ];
 
