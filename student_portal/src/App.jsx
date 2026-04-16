@@ -8,11 +8,11 @@ import Layout from './components/layout/Layout';
 
 // Pages
 import Dashboard     from './pages/Dashboard/Dashboard';
-import Assignments   from './pages/Assignments/Assignments';
 import Sessions      from './pages/Sessions/Sessions';
 import Slots         from './pages/Slots/Slots';
 import Communication from './pages/Communication/Communication';
 import Profile       from './pages/Profile/Profile';
+import PracticeTime  from './pages/PracticeTime/PracticeTime';
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -25,10 +25,10 @@ export default function App() {
   const renderPage = () => {
     switch (page) {
       case 'dashboard':     return <Dashboard     onNavigate={setPage} />;
-      case 'assignments':   return <Assignments />;
       case 'sessions':      return <Sessions      onNavigate={setPage} />;
       case 'slots':         return <Slots />;
       case 'communication': return <Communication />;
+      case 'practiceTime':  return <PracticeTime />;
       case 'profile':       return <Profile />;
       default:              return <Dashboard     onNavigate={setPage} />;
     }

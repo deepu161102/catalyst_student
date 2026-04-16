@@ -2,13 +2,11 @@ import {
   BookOpen,
   Calendar,
   CheckCircle,
-  Clock,
-  AlertCircle,
   ChevronRight,
   Star,
   TrendingUp,
 } from 'lucide-react';
-import { currentStudent, assignments, sessions } from '../../data/mockData';
+import { currentStudent, sessions } from '../../data/mockData';
 import StatCard from '../../components/common/StatCard';
 import EmptyState from '../../components/common/EmptyState';
 
@@ -23,10 +21,7 @@ function greeting() {
 }
 
 export default function Dashboard({ onNavigate }) {
-  const pending  = assignments.filter((a) => a.status === 'pending').length;
-  const overdue  = assignments.filter((a) => a.status === 'overdue').length;
   const upcoming = sessions.filter((s) => s.status === 'upcoming');
-  const recentAssignments = assignments.slice(0, 3);
 
   return (
     <div className="page-content">
@@ -51,20 +46,13 @@ export default function Dashboard({ onNavigate }) {
             >
               <Calendar size={14} /> Book a Session
             </button>
-            <button
-              className="btn btn-sm"
-              style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.25)' }}
-              onClick={() => onNavigate('assignments')}
-            >
-              <BookOpen size={14} /> View Assignments
-            </button>
           </div>
         </div>
         <div className="text-[64px] leading-none relative z-10">🎓</div>
       </div>
 
       {/* ── Stats row ────────────────────────────────────── */}
-      <div className="grid grid-cols-4 gap-5 mb-7">
+      <div className="grid grid-cols-3 gap-5 mb-7">
         <StatCard icon={TrendingUp} count={`${currentStudent.progress}%`} label="Course Progress" colorClass="indigo">
           <div className="bg-slate-200 rounded-[10px] h-1.5 mt-2" style={{ width: 80 }}>
             <div
@@ -74,13 +62,11 @@ export default function Dashboard({ onNavigate }) {
           </div>
         </StatCard>
         <StatCard icon={CheckCircle} count={currentStudent.completedSessions} label="Sessions Completed" colorClass="green" />
-        <StatCard icon={AlertCircle} count={pending + overdue}              label="Assignments Due"    colorClass="amber" />
-        <StatCard icon={Calendar}    count={upcoming.length}                label="Upcoming Sessions"  colorClass="purple" />
+        <StatCard icon={Calendar}    count={upcoming.length}                   label="Upcoming Sessions"  colorClass="purple" />
       </div>
 
-      {/* ── Middle grid ──────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-5 mb-5">
-        {/* Upcoming sessions */}
+      {/* ── Upcoming sessions ────────────────────────────── */}
+      <div className="mb-5">
         <div className="card">
           <div className="card-header">
             <span className="card-title"><Calendar size={18} color="#4f46e5" /> Upcoming Sessions</span>
@@ -119,53 +105,6 @@ export default function Dashboard({ onNavigate }) {
               </div>
             ))
           )}
-        </div>
-
-        {/* Recent assignments */}
-        <div className="card">
-          <div className="card-header">
-            <span className="card-title"><BookOpen size={18} color="#4f46e5" /> Recent Assignments</span>
-            <button className="btn btn-sm btn-outline" onClick={() => onNavigate('assignments')}>
-              View all <ChevronRight size={13} />
-            </button>
-          </div>
-
-          {recentAssignments.map((a) => {
-            const boxStyle =
-              a.status === 'overdue'
-                ? { background: 'linear-gradient(135deg,#ef4444,#dc2626)' }
-                : a.status === 'submitted'
-                ? { background: 'linear-gradient(135deg,#10b981,#059669)' }
-                : { background: 'linear-gradient(135deg,#f59e0b,#d97706)' };
-
-            const statusCls =
-              a.status === 'submitted'
-                ? 'bg-emerald-500/10 text-emerald-500'
-                : a.status === 'overdue'
-                ? 'bg-red-500/10 text-red-500'
-                : 'bg-indigo-600/10 text-indigo-600';
-
-            return (
-              <div
-                key={a.id}
-                className="flex items-center gap-3.5 py-3.5 border-b border-slate-100 last:border-b-0 last:pb-0"
-              >
-                <div
-                  className="w-12 h-12 rounded-[10px] flex items-center justify-center flex-shrink-0"
-                  style={boxStyle}
-                >
-                  <BookOpen size={18} color="white" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-sm font-semibold text-slate-900 mb-0.5">{a.title}</h4>
-                  <p className="text-xs text-slate-500">Due: {a.dueDate} · {a.mentor}</p>
-                </div>
-                <span className={`ml-auto px-2.5 py-[3px] rounded-full text-[11px] font-semibold ${statusCls}`}>
-                  {a.status.charAt(0).toUpperCase() + a.status.slice(1)}
-                </span>
-              </div>
-            );
-          })}
         </div>
       </div>
 
