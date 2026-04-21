@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import { validCredentials } from '../../data/mockData';
+import { authService } from '../../services/api';
 import catalystLogo from '../../assets/catalyst-logo.png';
 
 export default function SignIn({ onLogin }) {
@@ -9,22 +9,18 @@ export default function SignIn({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
-    setTimeout(() => {
-      if (
-          form.email === validCredentials.email &&
-          form.password === validCredentials.password
-      ) {
-        onLogin();
-      } else {
-        setError('Invalid email or password. Please try again.');
-      }
+    try {
+      const res = await authService.login(form.email, form.password);
+      onLogin(res.data); // cookie is set automatically by the server
+    } catch (err) {
+      setError(err.message || 'Invalid email or password. Please try again.');
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   return (
