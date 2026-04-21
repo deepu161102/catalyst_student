@@ -7,6 +7,7 @@ on:
     branches: [master]
 
 jobs:
+  # ─── CI: Lint + Build ───────────────────────────────────────────
   ci:
     name: Lint & Build
     runs-on: ubuntu-latest
@@ -33,3 +34,29 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Upload build artifact
+        if: github.ref == 'refs/heads/master'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: student_portal/dist
+
+  # ─── CD: Deploy to GitHub Pages (master only) ───────────────────
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: ci
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
