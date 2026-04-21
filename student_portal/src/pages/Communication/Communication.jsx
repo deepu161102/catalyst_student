@@ -155,16 +155,16 @@ export default function Communication() {
                   {msgs.map((msg) => (
                     <div
                       key={msg.id}
-                      className={`flex items-end gap-2 ${msg.from === 'self' ? 'flex-row-reverse' : ''}`}
+                      className={`flex items-end gap-2 mb-2 ${msg.from === 'self' ? 'flex-row-reverse' : ''}`}
                     >
                       <div className="w-7 h-7 bg-gradient-to-br from-indigo-600 to-violet-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
                         {msg.from === 'self'
                           ? getInitials(currentStudent.name)
                           : getInitials(selected.name)}
                       </div>
-                      <div>
+                      <div className={`flex flex-col max-w-[60%] ${msg.from === 'self' ? 'items-end' : 'items-start'}`}>
                         <div
-                          className={`max-w-[60%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed
+                          className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed
                             ${msg.from === 'self'
                               ? 'bg-gradient-to-br from-indigo-600 to-violet-500 text-white rounded-br-[4px]'
                               : 'bg-white text-slate-900 border border-slate-200 rounded-bl-[4px]'
@@ -172,7 +172,7 @@ export default function Communication() {
                         >
                           {msg.text}
                         </div>
-                        <div className={`text-[10px] text-slate-400 mt-[3px] ${msg.from === 'self' ? 'text-left' : ''}`}>
+                        <div className="text-[10px] text-slate-400 mt-[3px]">
                           {msg.time}
                         </div>
                       </div>
