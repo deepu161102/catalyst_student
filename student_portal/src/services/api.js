@@ -6,28 +6,31 @@ const handleResponse = async (res) => {
   return data;
 };
 
-// Students
+// credentials: 'include' sends the httpOnly cookie automatically on every request
+const req = (url, options = {}) =>
+  fetch(`${BASE_URL}${url}`, {
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...options.headers },
+    ...options,
+  }).then(handleResponse);
+
+export const authService = {
+  login: (email, password) =>
+    req('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+
+  logout: () =>
+    req('/auth/logout', { method: 'POST' }),
+
+  me: () => req('/auth/me'),
+
+  updateName: (name) =>
+    req('/auth/me', { method: 'PUT', body: JSON.stringify({ name }) }),
+};
+
 export const studentService = {
-  getAll: () =>
-    fetch(`${BASE_URL}/students`).then(handleResponse),
-
-  getById: (id) =>
-    fetch(`${BASE_URL}/students/${id}`).then(handleResponse),
-
-  create: (payload) =>
-    fetch(`${BASE_URL}/students`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    }).then(handleResponse),
-
-  update: (id, payload) =>
-    fetch(`${BASE_URL}/students/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    }).then(handleResponse),
-
-  remove: (id) =>
-    fetch(`${BASE_URL}/students/${id}`, { method: 'DELETE' }).then(handleResponse),
+  getAll:        ()           => req('/students'),
+  getById:       (id)         => req(`/students/${id}`),
+  create:        (payload)    => req('/students', { method: 'POST', body: JSON.stringify(payload) }),
+  update:        (id, payload)=> req(`/students/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  remove:        (id)         => req(`/students/${id}`, { method: 'DELETE' }),
 };
