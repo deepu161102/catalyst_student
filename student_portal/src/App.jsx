@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { authService } from './services/api';
+import { authService, studentService } from './services/api';
 
 import SignIn        from './components/auth/SignIn';
 import Layout        from './components/layout/Layout';
@@ -18,8 +18,16 @@ export default function App() {
   // On mount: validate cookie with server — restores session after refresh
   useEffect(() => {
     authService.me()
-      .then((res) => setStudent(res.data))
-      .catch(() => {}) // no cookie or expired — stay on login
+      .then(async (res) => {
+        const base = res.data;
+        try {
+          const mentorRes = await studentService.getMentor(base._id);
+          setStudent({ ...base, mentor: mentorRes.data?.mentor || null, batchInfo: mentorRes.data?.batch || null });
+        } catch {
+          setStudent(base);
+        }
+      })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
@@ -31,8 +39,17 @@ export default function App() {
     );
   }
 
+  const handleLogin = async (data) => {
+    try {
+      const mentorRes = await studentService.getMentor(data._id);
+      setStudent({ ...data, mentor: mentorRes.data?.mentor || null, batchInfo: mentorRes.data?.batch || null });
+    } catch {
+      setStudent(data);
+    }
+  };
+
   if (!student) {
-    return <SignIn onLogin={(data) => setStudent(data)} />;
+    return <SignIn onLogin={handleLogin} />;
   }
 
   const handleLogout = async () => {
@@ -43,12 +60,12 @@ export default function App() {
 
   const renderPage = () => {
     switch (page) {
-      case 'dashboard':     return <Dashboard onNavigate={setPage} />;
+      case 'dashboard':     return <Dashboard student={student} onNavigate={setPage} />;
       case 'sessions':      return <Sessions onNavigate={setPage} />;
       case 'slots':         return <Slots />;
-      case 'communication': return <Communication />;
+      case 'communication': return <Communication student={student} />;
       case 'practiceTime':  return <PracticeTime />;
-      case 'profile':       return <Profile student={student} onUpdateStudent={setStudent} />;
+      case 'profile':       return <Profile student={student} onUpdateStudent={(updated) => setStudent(s => ({ ...s, ...updated, mentor: s.mentor, batchInfo: s.batchInfo }))} />;
       default:              return <Dashboard onNavigate={setPage} />;
     }
   };

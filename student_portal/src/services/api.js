@@ -28,9 +28,17 @@ export const authService = {
 };
 
 export const studentService = {
-  getAll:        ()           => req('/students'),
-  getById:       (id)         => req(`/students/${id}`),
-  create:        (payload)    => req('/students', { method: 'POST', body: JSON.stringify(payload) }),
-  update:        (id, payload)=> req(`/students/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
-  remove:        (id)         => req(`/students/${id}`, { method: 'DELETE' }),
+  getAll:     ()            => req('/students'),
+  getById:    (id)          => req(`/students/${id}`),
+  getMentor:  (id)          => req(`/students/${id}/mentor`),
+  create:     (payload)     => req('/students', { method: 'POST', body: JSON.stringify(payload) }),
+  update:     (id, payload) => req(`/students/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  remove:     (id)          => req(`/students/${id}`, { method: 'DELETE' }),
+};
+
+export const chatService = {
+  getConversations: (userId)              => req(`/chat/conversations/${userId}`),
+  getMessages:      (userId, otherId, page = 1) => req(`/chat/messages/${userId}/${otherId}?page=${page}`),
+  markRead:         (senderId, receiverId) => req('/chat/messages/read', { method: 'PUT', body: JSON.stringify({ senderId, receiverId }) }),
+  searchUsers:      (q)                   => req(`/chat/users/search${q ? `?q=${encodeURIComponent(q)}` : ''}`),
 };

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import Sidebar from './Sidebar';
 
 const PAGE_META = {
@@ -19,13 +20,23 @@ function formatDate() {
 }
 
 export default function Layout({ page, onNavigate, onLogout, children }) {
+  const [collapsed, setCollapsed] = useState(false);
   const { title, subtitle } = PAGE_META[page] ?? PAGE_META.dashboard;
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar active={page} onNavigate={onNavigate} onLogout={onLogout} />
+      <Sidebar
+        active={page}
+        onNavigate={onNavigate}
+        onLogout={onLogout}
+        collapsed={collapsed}
+        onToggle={() => setCollapsed(c => !c)}
+      />
 
-      <main className="ml-[250px] flex-1 min-h-screen bg-slate-100">
+      <main
+        className="flex-1 min-h-screen bg-slate-100 transition-all duration-300"
+        style={{ marginLeft: collapsed ? 72 : 250 }}
+      >
         {/* Top bar */}
         <div className="bg-white px-7 py-4 flex items-center justify-between border-b border-slate-200 sticky top-0 z-50">
           <div>

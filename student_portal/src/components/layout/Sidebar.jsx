@@ -6,6 +6,8 @@ import {
   User,
   LogOut,
   Dumbbell,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { currentStudent } from '../../data/mockData';
 import catalystLogo from '../../assets/catalyst-logo.png';
@@ -23,46 +25,69 @@ function getInitials(name) {
   return name.split(' ').map((n) => n[0]).join('');
 }
 
-export default function Sidebar({ active, onNavigate, onLogout }) {
+export default function Sidebar({ active, onNavigate, onLogout, collapsed, onToggle }) {
   return (
-    <aside className="w-[250px] bg-[#0f172a] flex flex-col fixed top-0 left-0 h-screen z-[100]">
-      {/* Brand */}
-      <div className="px-5 py-6 border-b border-[#1e293b] flex items-center">
-        <img src={catalystLogo} alt="Catalyst" className="h-9 w-auto object-contain" />
+    <aside
+      className="bg-[#0f172a] flex flex-col fixed top-0 left-0 h-screen z-[100] transition-all duration-300 overflow-hidden"
+      style={{ width: collapsed ? 72 : 250 }}
+    >
+      {/* Brand + toggle */}
+      <div className="px-4 py-5 border-b border-[#1e293b] flex items-center gap-2 min-h-[72px]">
+        {!collapsed && (
+          <img src={catalystLogo} alt="Catalyst" className="h-9 w-auto object-contain flex-1 min-w-0" />
+        )}
+        <button
+          onClick={onToggle}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className={`w-7 h-7 rounded-lg flex items-center justify-center bg-[#1e293b] text-slate-400 hover:bg-[#334155] hover:text-white transition-colors shrink-0 ${collapsed ? 'mx-auto' : 'ml-auto'}`}
+        >
+          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+        </button>
       </div>
 
       {/* Logged-in user */}
-      <div className="px-5 py-4 border-b border-[#1e293b] flex items-center gap-2.5">
+      <div className={`border-b border-[#1e293b] flex items-center py-4 ${collapsed ? 'justify-center px-2' : 'gap-2.5 px-5'}`}>
         <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-violet-500 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
           {getInitials(currentStudent.name)}
         </div>
-        <div className="overflow-hidden">
-          <div className="text-[13px] font-semibold text-white whitespace-nowrap overflow-hidden text-ellipsis">
-            {currentStudent.name}
+        {!collapsed && (
+          <div className="overflow-hidden">
+            <div className="text-[13px] font-semibold text-white whitespace-nowrap overflow-hidden text-ellipsis">
+              {currentStudent.name}
+            </div>
+            <div className="text-[11px] text-slate-500 uppercase tracking-[0.5px]">Student</div>
           </div>
-          <div className="text-[11px] text-slate-500 uppercase tracking-[0.5px]">Student</div>
-        </div>
+        )}
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 py-4 overflow-y-auto">
-        <div className="text-[10px] font-semibold text-slate-600 uppercase tracking-[1px] px-5 pt-2 pb-1">
-          Main Menu
-        </div>
+        {!collapsed && (
+          <div className="text-[10px] font-semibold text-slate-600 uppercase tracking-[1px] px-5 pt-2 pb-1">
+            Main Menu
+          </div>
+        )}
         {NAV_ITEMS.map(({ id, label, icon: Icon, badge }) => (
           <div
             key={id}
             onClick={() => onNavigate(id)}
-            className={`flex items-center gap-3 px-5 py-2.5 cursor-pointer transition-all border-l-[3px] text-sm font-medium
+            title={collapsed ? label : ''}
+            className={`relative flex items-center cursor-pointer transition-all border-l-[3px] text-sm font-medium
+              ${collapsed ? 'justify-center px-2 py-3' : 'gap-3 px-5 py-2.5'}
               ${active === id
                 ? 'bg-[rgba(79,70,229,0.15)] border-l-indigo-600 text-white'
                 : 'border-l-transparent text-slate-400 hover:bg-[#1e293b] hover:text-slate-200'
               }`}
           >
-            <Icon size={18} />
-            {label}
-            {badge && (
+            <Icon size={18} className="shrink-0" />
+            {!collapsed && <span className="flex-1">{label}</span>}
+            {!collapsed && badge && (
               <span className="ml-auto bg-indigo-600 text-white text-[10px] font-bold px-[7px] py-[2px] rounded-[10px]">
+                {badge}
+              </span>
+            )}
+            {collapsed && badge && (
+              <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-indigo-600 text-white text-[9px] font-bold flex items-center justify-center">
                 {badge}
               </span>
             )}
@@ -71,13 +96,15 @@ export default function Sidebar({ active, onNavigate, onLogout }) {
       </nav>
 
       {/* Sign out */}
-      <div className="py-4 border-t border-[#1e293b]">
+      <div className="py-3 border-t border-[#1e293b]">
         <button
           onClick={onLogout}
-          className="flex items-center gap-3 px-5 py-2.5 text-slate-400 cursor-pointer transition-all text-sm font-medium border-none bg-transparent w-full hover:text-red-400 hover:bg-red-500/10"
+          title={collapsed ? 'Sign Out' : ''}
+          className={`flex items-center text-slate-400 cursor-pointer transition-all text-sm font-medium border-none bg-transparent w-full hover:text-red-400 hover:bg-red-500/10
+            ${collapsed ? 'justify-center px-2 py-3' : 'gap-3 px-5 py-2.5'}`}
         >
-          <LogOut size={18} />
-          Sign Out
+          <LogOut size={18} className="shrink-0" />
+          {!collapsed && 'Sign Out'}
         </button>
       </div>
     </aside>
