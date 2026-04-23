@@ -4,19 +4,23 @@ import {
   Calendar, Star, CheckCircle, Edit2, Save, X,
 } from 'lucide-react';
 import { authService } from '../../services/api';
-import { currentStudent } from '../../data/mockData';
 
 export default function Profile({ student, onUpdateStudent }) {
-  const fallback = currentStudent;
-  const src = student || fallback;
-
   const [editing, setEditing] = useState(false);
-  const [name, setName]       = useState(src.name);
+  const [name, setName]       = useState(student?.name || '');
   const [saved, setSaved]     = useState(false);
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState('');
 
-  const initials = name.split(' ').map((n) => n[0]).join('');
+  const initials  = name.split(' ').filter(Boolean).map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+  const progress  = student?.progress ?? 0;
+  const course    = student?.batchInfo?.course || '—';
+  const batchName = student?.batchInfo?.name   || '—';
+  const mentor    = student?.mentor;
+
+  const enrollDate = student?.enrollmentDate
+    ? new Date(student.enrollmentDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+    : '—';
 
   const handleSave = async () => {
     setSaving(true);
@@ -35,7 +39,7 @@ export default function Profile({ student, onUpdateStudent }) {
   };
 
   const handleCancel = () => {
-    setName(src.name);
+    setName(student?.name || '');
     setEditing(false);
     setError('');
   };
@@ -61,17 +65,17 @@ export default function Profile({ student, onUpdateStudent }) {
               {initials}
             </div>
             <div className="text-xl font-bold text-slate-900 mb-1">{name}</div>
-            <div className="text-[13px] text-slate-500 mb-5">Student · {src.course || fallback.course}</div>
+            <div className="text-[13px] text-slate-500 mb-5">Student · {course}</div>
             <span className="inline-flex items-center gap-1.5 bg-indigo-600/[0.08] text-indigo-600 px-2.5 py-1 rounded-full text-xs font-semibold mb-5">
-              <Star size={11} /> {src.batch || fallback.batch}
+              <Star size={11} /> {batchName}
             </span>
 
             <div>
               {[
-                { icon: Mail,     label: 'Email',    value: src.email },
-                { icon: Phone,    label: 'Phone',    value: src.phone || fallback.phone },
-                { icon: BookOpen, label: 'Course',   value: src.course || fallback.course },
-                { icon: Calendar, label: 'Enrolled', value: src.enrollmentDate || fallback.enrollmentDate },
+                { icon: Mail,     label: 'Email',    value: student?.email || '—' },
+                { icon: Phone,    label: 'Phone',    value: student?.phone || '—' },
+                { icon: BookOpen, label: 'Course',   value: course },
+                { icon: Calendar, label: 'Enrolled', value: enrollDate },
               ].map(({ icon: Icon, label, value }) => (
                 <div key={label} className="flex items-center gap-2.5 py-2.5 border-b border-slate-100 last:border-b-0 text-[13px] text-slate-500 text-left">
                   <Icon size={15} color="#94a3b8" className="flex-shrink-0" />
@@ -86,12 +90,12 @@ export default function Profile({ student, onUpdateStudent }) {
             <div className="mt-5">
               <div className="flex justify-between text-[13px] mb-1.5">
                 <span className="text-slate-500">Course Progress</span>
-                <span className="font-bold text-indigo-600">{src.progress ?? fallback.progress}%</span>
+                <span className="font-bold text-indigo-600">{progress}%</span>
               </div>
               <div className="bg-slate-200 rounded-[10px] h-1.5">
                 <div
                   className="h-full rounded-[10px] bg-gradient-to-r from-indigo-600 to-violet-500"
-                  style={{ width: `${src.progress ?? fallback.progress}%` }}
+                  style={{ width: `${progress}%` }}
                 />
               </div>
             </div>
@@ -121,7 +125,6 @@ export default function Profile({ student, onUpdateStudent }) {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              {/* Name — editable */}
               <div className="bg-white border border-slate-200 rounded-[10px] p-4">
                 <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.5px] mb-1.5">Full Name</div>
                 {editing ? (
@@ -136,21 +139,19 @@ export default function Profile({ student, onUpdateStudent }) {
                 )}
               </div>
 
-              {/* Email — read only */}
               <div className="bg-white border border-slate-200 rounded-[10px] p-4">
                 <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.5px] mb-1.5">Email Address</div>
-                <div className="text-sm font-semibold text-slate-900">{src.email}</div>
+                <div className="text-sm font-semibold text-slate-900">{student?.email || '—'}</div>
               </div>
 
-              {/* Phone — read only */}
               <div className="bg-white border border-slate-200 rounded-[10px] p-4">
                 <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.5px] mb-1.5">Phone Number</div>
-                <div className="text-sm font-semibold text-slate-900">{src.phone || fallback.phone}</div>
+                <div className="text-sm font-semibold text-slate-900">{student?.phone || '—'}</div>
               </div>
 
               <div className="bg-white border border-slate-200 rounded-[10px] p-4">
                 <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.5px] mb-1.5">Batch</div>
-                <div className="text-sm font-semibold text-slate-900">{src.batch || fallback.batch}</div>
+                <div className="text-sm font-semibold text-slate-900">{batchName}</div>
               </div>
             </div>
           </div>
@@ -162,16 +163,16 @@ export default function Profile({ student, onUpdateStudent }) {
             </div>
             <div className="grid grid-cols-2 gap-4">
               {[
-                { label: 'Course',             value: src.course || fallback.course },
-                { label: 'Enrollment Date',    value: src.enrollmentDate || fallback.enrollmentDate },
-                { label: 'Batch',              value: src.batch || fallback.batch },
-                { label: 'Total Sessions',     value: String(src.totalSessions ?? fallback.totalSessions) },
-                { label: 'Completed Sessions', value: String(src.completedSessions ?? fallback.completedSessions) },
-                { label: 'Upcoming Sessions',  value: String(src.upcomingSessions ?? fallback.upcomingSessions) },
+                { label: 'Course',             value: course },
+                { label: 'Enrollment Date',    value: enrollDate },
+                { label: 'Batch',              value: batchName },
+                { label: 'Total Sessions',     value: String(student?.totalSessions ?? '—') },
+                { label: 'Completed Sessions', value: String(student?.completedSessions ?? '—') },
+                { label: 'Batch Status',       value: student?.batchInfo?.status || '—' },
               ].map(({ label, value }) => (
                 <div key={label} className="bg-white border border-slate-200 rounded-[10px] p-4">
                   <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.5px] mb-1.5">{label}</div>
-                  <div className="text-sm font-semibold text-slate-900">{value}</div>
+                  <div className="text-sm font-semibold text-slate-900 capitalize">{value}</div>
                 </div>
               ))}
             </div>
@@ -182,28 +183,34 @@ export default function Profile({ student, onUpdateStudent }) {
             <div className="card-header">
               <span className="card-title"><Star size={18} color="#4f46e5" /> My Mentor</span>
             </div>
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-indigo-600 to-violet-500 rounded-full flex items-center justify-center text-xl font-bold text-white flex-shrink-0">
-                {(src.mentor?.name || fallback.mentor.name).split(' ').map((n) => n[0]).join('')}
-              </div>
-              <div>
-                <div className="font-bold text-base text-slate-900 mb-0.5">{src.mentor?.name || fallback.mentor.name}</div>
-                <div className="text-[13px] text-slate-500">{src.mentor?.specialisation || fallback.mentor.specialisation}</div>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { label: 'Specialisation', value: src.mentor?.specialisation || fallback.mentor.specialisation },
-                { label: 'Experience',     value: src.mentor?.experience || fallback.mentor.experience },
-                { label: 'Email',          value: src.mentor?.email || fallback.mentor.email },
-                { label: 'Phone',          value: src.mentor?.phone || fallback.mentor.phone },
-              ].map(({ label, value }) => (
-                <div key={label} className="bg-white border border-slate-200 rounded-[10px] p-4">
-                  <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.5px] mb-1.5">{label}</div>
-                  <div className="text-[13px] font-semibold text-slate-900">{value}</div>
+            {mentor ? (
+              <>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-14 h-14 bg-gradient-to-br from-indigo-600 to-violet-500 rounded-full flex items-center justify-center text-xl font-bold text-white flex-shrink-0">
+                    {mentor.name?.split(' ').filter(Boolean).map((n) => n[0]).join('').toUpperCase().slice(0, 2)}
+                  </div>
+                  <div>
+                    <div className="font-bold text-base text-slate-900 mb-0.5">{mentor.name}</div>
+                    <div className="text-[13px] text-slate-500">{mentor.specialization || mentor.specialisation || '—'}</div>
+                  </div>
                 </div>
-              ))}
-            </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { label: 'Specialisation', value: mentor.specialization || mentor.specialisation || '—' },
+                    { label: 'Experience',     value: mentor.experience ? `${mentor.experience} yrs` : '—' },
+                    { label: 'Email',          value: mentor.email || '—' },
+                    { label: 'Phone',          value: mentor.phone || '—' },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="bg-white border border-slate-200 rounded-[10px] p-4">
+                      <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.5px] mb-1.5">{label}</div>
+                      <div className="text-[13px] font-semibold text-slate-900">{value}</div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-slate-400 py-4">No mentor assigned yet.</p>
+            )}
           </div>
         </div>
       </div>
