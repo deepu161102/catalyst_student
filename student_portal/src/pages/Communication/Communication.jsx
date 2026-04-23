@@ -112,13 +112,13 @@ export default function Communication({ student }) {
   // Load messages when selected contact changes
   useEffect(() => {
     if (!selected?.userId || !student?._id) return;
-    setMessages([]);
     chatService.getMessages(student._id, selected.userId)
         .then(res => setMessages(res.data))
-        .catch(console.error);
+        .catch(() => setMessages([]));
     socketRef.current?.emit('message_read', { senderId: selected.userId, receiverId: student._id });
-    chatService.markRead(selected.userId, student._id).catch(() => {});
-    markReadLocally(selected.userId);
+    chatService.markRead(selected.userId, student._id)
+        .then(() => markReadLocally(selected.userId))
+        .catch(() => markReadLocally(selected.userId));
   }, [selected?.userId, student._id, markReadLocally]); // ✅ fixed: was missing student._id and markReadLocally
 
   // Scroll to latest message
@@ -128,8 +128,8 @@ export default function Communication({ student }) {
 
   // Debounced user search
   useEffect(() => {
-    if (!search.trim()) { setSearchResults([]); return; }
     const t = setTimeout(() => {
+      if (!search.trim()) { setSearchResults([]); return; }
       chatService.searchUsers(search).then(res => setSearchResults(res.data)).catch(console.error);
     }, 300);
     return () => clearTimeout(t);
@@ -236,7 +236,7 @@ export default function Communication({ student }) {
                           {contact.unreadCount > 0 && (
                               <span className="bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-[2px] rounded-[10px] min-w-[18px] text-center">
                         {contact.unreadCount}
-</span>
+                      </span>
                           )}
                         </div>
                       </div>
@@ -263,7 +263,7 @@ export default function Communication({ student }) {
                           ? <span className="text-indigo-500">typing...</span>
                           : <span className={onlineUsers.has(selected.userId?.toString()) ? 'text-emerald-500' : 'text-slate-400'}>
                         {onlineUsers.has(selected.userId?.toString()) ? 'Online' : 'Offline'}
-</span>
+                      </span>
                       }
                     </p>
                   </div>
