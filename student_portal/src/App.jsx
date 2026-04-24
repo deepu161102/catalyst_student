@@ -11,9 +11,10 @@ import Profile       from './pages/Profile/Profile';
 import PracticeTime  from './pages/PracticeTime/PracticeTime';
 
 export default function App() {
-  const [student, setStudent] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage]       = useState('dashboard');
+  const [student, setStudent]                 = useState(null);
+  const [loading, setLoading]                 = useState(true);
+  const [page, setPage]                       = useState('dashboard');
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
 
   // On mount: validate cookie with server — restores session after refresh
   useEffect(() => {
@@ -58,6 +59,7 @@ export default function App() {
     await authService.logout();
     setStudent(null);
     setPage('dashboard');
+    setChatUnreadCount(0);
   };
 
   const renderPage = () => {
@@ -65,7 +67,7 @@ export default function App() {
       case 'dashboard':     return <Dashboard student={student} onNavigate={setPage} />;
       case 'sessions':      return <Sessions onNavigate={setPage} />;
       case 'slots':         return <Slots />;
-      case 'communication': return <Communication student={student} />;
+      case 'communication': return <Communication student={student} onUnreadChange={setChatUnreadCount} />;
       case 'practiceTime':  return <PracticeTime />;
       case 'profile':       return <Profile student={student} onUpdateStudent={(updated) => setStudent(s => ({ ...s, ...updated, mentors: s.mentors, mentor: s.mentor, batchInfo: s.batchInfo }))} />;
       default:              return <Dashboard onNavigate={setPage} />;
@@ -73,7 +75,7 @@ export default function App() {
   };
 
   return (
-    <Layout page={page} onNavigate={setPage} onLogout={handleLogout} student={student}>
+    <Layout page={page} onNavigate={setPage} onLogout={handleLogout} student={student} chatUnreadCount={chatUnreadCount}>
       {renderPage()}
     </Layout>
   );

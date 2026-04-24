@@ -1,11 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Search, Send, MoreVertical, Phone, Video } from 'lucide-react';
+import { Search, Send, MoreVertical, Phone, Video, Paperclip, X } from 'lucide-react';
+import BAvatar from 'boring-avatars';
+import EmojiPicker from 'emoji-picker-react';
 import { chatService } from '../../services/api';
 import { connectSocket, disconnectSocket } from '../../services/socket';
-
-function getInitials(name = '') {
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-}
 
 function formatTime(ts) {
   return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -21,39 +19,59 @@ function formatDate(ts) {
   return d.toLocaleDateString();
 }
 
-const EMOJI_TABS = [
-  { icon: '😊', emojis: ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','😉','😊','😇','🥰','😍','🤩','😘','😋','😛','😜','🤪','😝','🤑','🤗','😐','🙄','😏','😒','😞','😔','😕','🙁','😣','😩','🥺','😢','😭','😤','😠','😡','😳','😱','😨'] },
-  { icon: '👋', emojis: ['👋','🤚','✋','🖖','👌','✌️','🤞','🤟','🤙','👈','👉','👆','👇','👍','👎','✊','👊','👏','🙌','🤝','🙏','💪'] },
-  { icon: '❤️', emojis: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝'] },
-  { icon: '🎉', emojis: ['🎉','🎊','🎈','🎁','🏆','🥇','🌟','⭐','✨','💫','🔥','💯','🎯','🚀','💡','📚','📝','✅','❌','💬','🔔','💰','🎓'] },
-  { icon: '🐶', emojis: ['🐶','🐱','🐭','🐰','🦊','🐻','🐼','🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐔','🐧','🐦','🦄','🐴'] },
-];
-
-function EmojiPicker({ onSelect }) {
-  const [tab, setTab] = useState(0);
-  return (
-    <div className="absolute bottom-[calc(100%+6px)] left-0 z-50 bg-white border border-slate-200 rounded-xl shadow-lg w-[272px] overflow-hidden">
-      <div className="flex border-b border-slate-100 px-1 pt-1 gap-0.5">
-        {EMOJI_TABS.map((t, i) => (
-          <button key={i} onClick={() => setTab(i)}
-            className={`flex-1 py-1.5 text-[17px] rounded-lg transition-colors ${i === tab ? 'bg-slate-100' : 'hover:bg-slate-50'}`}>
-            {t.icon}
-          </button>
-        ))}
-      </div>
-      <div className="grid grid-cols-8 gap-0.5 p-2 max-h-[156px] overflow-y-auto">
-        {EMOJI_TABS[tab].emojis.map(e => (
-          <button key={e} onClick={() => onSelect(e)}
-            className="text-[18px] leading-none p-1.5 rounded-lg hover:bg-slate-100 transition-colors text-center">
-            {e}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+function formatBytes(bytes) {
+  const b = parseInt(bytes) || 0;
+  if (b < 1024) return `${b} B`;
+  if (b < 1048576) return `${(b / 1024).toFixed(1)} KB`;
+  return `${(b / 1048576).toFixed(1)} MB`;
 }
 
-export default function Communication({ student }) {
+function MessageContent({ text }) {
+  if (!text) return null;
+
+  if (text.startsWith('[IMG:')) {
+    const end = text.indexOf(']', 5);
+    if (end === -1) return <span className="break-words">{text}</span>;
+    const dataUrl = text.slice(5, end);
+    const caption = text.slice(end + 1).trim();
+    return (
+      <div>
+        <img
+          src={dataUrl} alt="attachment"
+          className="max-w-full rounded-lg max-h-[200px] object-contain cursor-pointer block"
+          onClick={() => window.open(dataUrl, '_blank')}
+        />
+        {caption && <p className="text-sm mt-1 break-words">{caption}</p>}
+      </div>
+    );
+  }
+
+  if (text.startsWith('[FILE:')) {
+    const end = text.indexOf(']', 6);
+    if (end === -1) return <span className="break-words">{text}</span>;
+    const [filename, sizeStr] = text.slice(6, end).split('||');
+    const caption = text.slice(end + 1).trim();
+    const ext = filename?.split('.').pop()?.toLowerCase() || '';
+    const icon = ext === 'pdf' ? '📄' : ['doc','docx'].includes(ext) ? '📝' : ext === 'zip' ? '🗜️' : '📎';
+    return (
+      <div>
+        <div className="flex items-center gap-2 bg-black/[0.06] rounded-lg px-2.5 py-2">
+          <span className="text-lg leading-none">{icon}</span>
+          <div className="min-w-0">
+            <p className="text-sm font-medium leading-tight truncate">{filename}</p>
+            <p className="text-xs opacity-60">{formatBytes(sizeStr)}</p>
+          </div>
+        </div>
+        {caption && <p className="text-sm mt-1 break-words">{caption}</p>}
+      </div>
+    );
+  }
+
+  return <span className="break-words">{text}</span>;
+}
+
+
+export default function Communication({ student, onUnreadChange }) {
   const [conversations, setConversations] = useState([]);
   const [selected, setSelected]           = useState(null);
   const [messages, setMessages]           = useState([]);
@@ -63,13 +81,21 @@ export default function Communication({ student }) {
   const [typing, setTyping]               = useState(false);
   const [onlineUsers, setOnlineUsers]     = useState(new Set());
   const [showEmoji, setShowEmoji]         = useState(false);
+  const [attachedFile, setAttachedFile]   = useState(null);
 
   const messagesEndRef = useRef(null);
   const socketRef      = useRef(null);
   const selectedRef    = useRef(null);
   const typingTimer    = useRef(null);
+  const fileInputRef   = useRef(null);
 
   useEffect(() => { selectedRef.current = selected; }, [selected]);
+
+  // Bubble up total unread count whenever conversations change
+  useEffect(() => {
+    const total = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+    onUnreadChange?.(total);
+  }, [conversations, onUnreadChange]);
 
   const markReadLocally = useCallback((senderId) => {
     setConversations(p => p.map(c =>
@@ -130,7 +156,7 @@ export default function Communication({ student }) {
     };
   }, [student._id, markReadLocally]);
 
-  // Load conversations and pre-seed all assigned mentors
+  // Load conversations + pre-seed assigned mentors
   useEffect(() => {
     if (!student?._id) return;
     chatService.getConversations(student._id)
@@ -160,12 +186,10 @@ export default function Communication({ student }) {
       .catch(() => markReadLocally(selected.userId));
   }, [selected?.userId, student._id, markReadLocally]);
 
-  // Scroll to latest message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Debounced search
   useEffect(() => {
     const t = setTimeout(() => {
       if (!search.trim()) { setSearchResults([]); return; }
@@ -174,26 +198,54 @@ export default function Communication({ student }) {
     return () => clearTimeout(t);
   }, [search]);
 
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = '';
+
+    if (file.type.startsWith('image/') && file.size <= 500 * 1024) {
+      const reader = new FileReader();
+      reader.onload = (ev) => setAttachedFile({ name: file.name, type: file.type, size: file.size, dataUrl: ev.target.result });
+      reader.readAsDataURL(file);
+    } else {
+      setAttachedFile({ name: file.name, type: file.type, size: file.size, dataUrl: null });
+    }
+  };
+
   const handleSend = () => {
-    if (!input.trim() || !selected || !student?._id) return;
+    if (!input.trim() && !attachedFile) return;
+    if (!selected || !student?._id) return;
+
+    let messageContent = input.trim();
+
+    if (attachedFile) {
+      if (attachedFile.type.startsWith('image/') && attachedFile.dataUrl) {
+        messageContent = `[IMG:${attachedFile.dataUrl}]${messageContent ? '\n' + messageContent : ''}`;
+      } else {
+        messageContent = `[FILE:${attachedFile.name}||${attachedFile.size}||${attachedFile.type}]${messageContent ? '\n' + messageContent : ''}`;
+      }
+      setAttachedFile(null);
+    }
+
     const tempId = `temp_${Date.now()}`;
     const optimistic = {
       _id: tempId, senderId: student._id, receiverId: selected.userId,
-      message: input.trim(), timestamp: new Date().toISOString(), read: false,
+      message: messageContent, timestamp: new Date().toISOString(), read: false,
     };
     setMessages(p => [...p, optimistic]);
     socketRef.current?.emit('send_message', {
       senderId: student._id, receiverId: selected.userId,
-      message: input.trim(), tempId,
+      message: messageContent, tempId,
     });
     setConversations(p => {
       const exists = p.find(c => c.userId?.toString() === selected.userId?.toString());
+      const preview = attachedFile ? (attachedFile.type.startsWith('image/') ? '📷 Image' : `📎 ${attachedFile.name}`) : messageContent;
       if (exists) return p.map(c =>
         c.userId?.toString() === selected.userId?.toString()
-          ? { ...c, lastMessage: input.trim(), lastTime: new Date().toISOString() }
+          ? { ...c, lastMessage: preview, lastTime: new Date().toISOString() }
           : c
       );
-      return [{ userId: selected.userId, name: selected.name, email: selected.email, lastMessage: input.trim(), lastTime: new Date().toISOString(), unreadCount: 0 }, ...p];
+      return [{ userId: selected.userId, name: selected.name, email: selected.email, lastMessage: preview, lastTime: new Date().toISOString(), unreadCount: 0 }, ...p];
     });
     setInput('');
   };
@@ -220,6 +272,17 @@ export default function Communication({ student }) {
     (acc[d] = acc[d] || []).push(msg);
     return acc;
   }, {});
+
+  const lastMsgPreview = (msg) => {
+    if (!msg) return '';
+    if (msg.startsWith('[IMG:')) return '📷 Image';
+    if (msg.startsWith('[FILE:')) {
+      const end = msg.indexOf(']', 6);
+      const filename = end > -1 ? msg.slice(6, end).split('||')[0] : 'File';
+      return `📎 ${filename}`;
+    }
+    return msg;
+  };
 
   return (
     <div className="page-content pb-0">
@@ -256,8 +319,10 @@ export default function Communication({ student }) {
                       : 'hover:bg-slate-50'
                     }`}
                 >
-                  <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-violet-500 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0 relative">
-                    {getInitials(contact.name)}
+                  <div className="relative flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full overflow-hidden">
+                      <BAvatar size={40} name={contact.name || 'User'} variant="beam" />
+                    </div>
                     {onlineUsers.has(contact.userId?.toString()) && (
                       <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white absolute bottom-0 right-0" />
                     )}
@@ -265,7 +330,7 @@ export default function Communication({ student }) {
                   <div className="flex-1 overflow-hidden">
                     <div className="text-[13px] font-semibold text-slate-900 mb-0.5">{contact.name}</div>
                     <div className="text-xs text-slate-500 whitespace-nowrap overflow-hidden text-ellipsis">
-                      {contact.lastMessage || contact.email}
+                      {lastMsgPreview(contact.lastMessage) || contact.email}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1">
@@ -289,8 +354,10 @@ export default function Communication({ student }) {
           <div className="flex-1 flex flex-col min-w-0">
             {/* Header */}
             <div className="px-5 py-4 border-b border-slate-200 flex items-center gap-3 flex-shrink-0">
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-violet-500 rounded-full flex items-center justify-center text-[15px] font-bold text-white relative flex-shrink-0">
-                {getInitials(selected.name)}
+              <div className="relative flex-shrink-0">
+                <div className="w-10 h-10 rounded-full overflow-hidden">
+                  <BAvatar size={40} name={selected.name || 'User'} variant="beam" />
+                </div>
                 {onlineUsers.has(selected.userId?.toString()) && (
                   <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white absolute bottom-0 right-0" />
                 )}
@@ -316,7 +383,7 @@ export default function Communication({ student }) {
               </div>
             </div>
 
-            {/* Messages — WhatsApp style: self on right, other on left */}
+            {/* Messages */}
             <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-1 bg-[#f0f2f5]">
               {Object.entries(grouped).map(([date, msgs]) => (
                 <div key={date}>
@@ -330,12 +397,12 @@ export default function Communication({ student }) {
                     return (
                       <div key={msg._id} className={`flex mb-1 ${isSelf ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[65%] flex flex-col ${isSelf ? 'items-end' : 'items-start'}`}>
-                          <div className={`px-3.5 py-2 text-sm leading-relaxed break-words
+                          <div className={`px-3.5 py-2 text-sm leading-relaxed
                             ${isSelf
                               ? 'bg-[#d9fdd3] text-slate-900 rounded-[10px] rounded-tr-[2px]'
                               : 'bg-white text-slate-900 rounded-[10px] rounded-tl-[2px] shadow-sm'
                             }`}>
-                            {msg.message}
+                            <MessageContent text={msg.message} />
                           </div>
                           <div className="text-[10px] text-slate-400 mt-[2px] flex items-center gap-1 px-1">
                             {formatTime(msg.timestamp)}
@@ -359,8 +426,41 @@ export default function Communication({ student }) {
               <div ref={messagesEndRef} />
             </div>
 
+            {/* File preview bar */}
+            {attachedFile && (
+              <div className="px-4 py-2 border-t border-slate-100 bg-slate-50 flex items-center gap-2.5">
+                {attachedFile.dataUrl ? (
+                  <img src={attachedFile.dataUrl} alt="preview" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                ) : (
+                  <div className="w-10 h-10 bg-slate-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Paperclip size={16} className="text-slate-500" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-medium text-slate-800 truncate">{attachedFile.name}</p>
+                  <p className="text-[11px] text-slate-500">{formatBytes(attachedFile.size)}</p>
+                </div>
+                <button onClick={() => setAttachedFile(null)} className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center hover:bg-slate-300 transition-colors flex-shrink-0">
+                  <X size={11} />
+                </button>
+              </div>
+            )}
+
             {/* Input */}
             <div className="px-4 py-3 border-t border-slate-200 flex items-center gap-2.5 bg-white flex-shrink-0">
+              {/* Hidden file input */}
+              <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileSelect} />
+
+              {/* Attach button */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="w-9 h-9 border border-slate-200 rounded-lg bg-white flex items-center justify-center cursor-pointer text-slate-500 transition-all hover:bg-slate-100 flex-shrink-0"
+                title="Attach file"
+              >
+                <Paperclip size={16} />
+              </button>
+
+              {/* Emoji button */}
               <div className="relative flex-shrink-0">
                 <button
                   onClick={() => setShowEmoji(p => !p)}
@@ -372,10 +472,19 @@ export default function Communication({ student }) {
                 {showEmoji && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowEmoji(false)} />
-                    <EmojiPicker onSelect={e => setInput(p => p + e)} />
+                    <div className="absolute bottom-[calc(100%+6px)] left-0 z-50">
+                      <EmojiPicker
+                        onEmojiClick={(emojiData) => { setInput(p => p + emojiData.emoji); setShowEmoji(false); }}
+                        width={300}
+                        height={380}
+                        previewConfig={{ showPreview: false }}
+                        searchPlaceholder="Search emoji..."
+                      />
+                    </div>
                   </>
                 )}
               </div>
+
               <textarea
                 className="flex-1 border-[1.5px] border-slate-200 rounded-[10px] px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all resize-none max-h-[100px] focus:border-indigo-600"
                 placeholder={`Message ${selected.name}...`}
@@ -386,7 +495,7 @@ export default function Communication({ student }) {
               />
               <button
                 onClick={handleSend}
-                style={{ opacity: input.trim() ? 1 : 0.5 }}
+                style={{ opacity: (input.trim() || attachedFile) ? 1 : 0.5 }}
                 className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-violet-500 text-white border-none rounded-[10px] flex items-center justify-center cursor-pointer transition-all hover:opacity-90 flex-shrink-0"
               >
                 <Send size={16} />
