@@ -22,9 +22,10 @@ export default function App() {
         const base = res.data;
         try {
           const mentorRes = await studentService.getMentor(base._id);
-          setStudent({ ...base, mentor: mentorRes.data?.mentor || null, batchInfo: mentorRes.data?.batch || null });
+          const mentors = mentorRes.data || [];
+          setStudent({ ...base, mentors, mentor: mentors[0]?.mentor || null, batchInfo: mentors[0]?.batch || null });
         } catch {
-          setStudent(base);
+          setStudent({ ...base, mentors: [] });
         }
       })
       .catch(() => {})
@@ -42,9 +43,10 @@ export default function App() {
   const handleLogin = async (data) => {
     try {
       const mentorRes = await studentService.getMentor(data._id);
-      setStudent({ ...data, mentor: mentorRes.data?.mentor || null, batchInfo: mentorRes.data?.batch || null });
+      const mentors = mentorRes.data || [];
+      setStudent({ ...data, mentors, mentor: mentors[0]?.mentor || null, batchInfo: mentors[0]?.batch || null });
     } catch {
-      setStudent(data);
+      setStudent({ ...data, mentors: [] });
     }
   };
 
@@ -65,7 +67,7 @@ export default function App() {
       case 'slots':         return <Slots />;
       case 'communication': return <Communication student={student} />;
       case 'practiceTime':  return <PracticeTime />;
-      case 'profile':       return <Profile student={student} onUpdateStudent={(updated) => setStudent(s => ({ ...s, ...updated, mentor: s.mentor, batchInfo: s.batchInfo }))} />;
+      case 'profile':       return <Profile student={student} onUpdateStudent={(updated) => setStudent(s => ({ ...s, ...updated, mentors: s.mentors, mentor: s.mentor, batchInfo: s.batchInfo }))} />;
       default:              return <Dashboard onNavigate={setPage} />;
     }
   };

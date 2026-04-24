@@ -97,29 +97,23 @@ export default function Communication({ student }) {
     };
   }, [student._id, markReadLocally]);
 
-  // Load conversations and pre-seed assigned mentor
+  // Load conversations and pre-seed all assigned mentors
   useEffect(() => {
     if (!student?._id) return;
     chatService.getConversations(student._id)
       .then(res => {
         const convos = res.data || [];
-        if (student.mentor?._id) {
-          const mentorId = student.mentor._id.toString();
-          const exists = convos.some(c => c.userId?.toString() === mentorId);
-          if (!exists) {
-            convos.unshift({
-              userId: student.mentor._id,
-              name: student.mentor.name,
-              email: student.mentor.email,
-              lastMessage: '',
-              unreadCount: 0,
-            });
+        const convoIds = new Set(convos.map(c => c.userId?.toString()));
+        (student.mentors || []).forEach(({ mentor }) => {
+          if (mentor?._id && !convoIds.has(mentor._id.toString())) {
+            convos.unshift({ userId: mentor._id, name: mentor.name, email: mentor.email, lastMessage: '', unreadCount: 0 });
+            convoIds.add(mentor._id.toString());
           }
-        }
+        });
         setConversations(convos);
       })
       .catch(console.error);
-  }, [student?._id]);
+  }, [student?._id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load messages when selected contact changes
   useEffect(() => {
