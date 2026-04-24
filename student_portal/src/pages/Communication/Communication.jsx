@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Search, Send, Paperclip, MoreVertical, Phone, Video } from 'lucide-react';
+import { Search, Send, MoreVertical, Phone, Video } from 'lucide-react';
 import { chatService } from '../../services/api';
 import { connectSocket, disconnectSocket } from '../../services/socket';
 
@@ -21,6 +21,38 @@ function formatDate(ts) {
   return d.toLocaleDateString();
 }
 
+const EMOJI_TABS = [
+  { icon: '😊', emojis: ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','😉','😊','😇','🥰','😍','🤩','😘','😋','😛','😜','🤪','😝','🤑','🤗','😐','🙄','😏','😒','😞','😔','😕','🙁','😣','😩','🥺','😢','😭','😤','😠','😡','😳','😱','😨'] },
+  { icon: '👋', emojis: ['👋','🤚','✋','🖖','👌','✌️','🤞','🤟','🤙','👈','👉','👆','👇','👍','👎','✊','👊','👏','🙌','🤝','🙏','💪'] },
+  { icon: '❤️', emojis: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝'] },
+  { icon: '🎉', emojis: ['🎉','🎊','🎈','🎁','🏆','🥇','🌟','⭐','✨','💫','🔥','💯','🎯','🚀','💡','📚','📝','✅','❌','💬','🔔','💰','🎓'] },
+  { icon: '🐶', emojis: ['🐶','🐱','🐭','🐰','🦊','🐻','🐼','🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐔','🐧','🐦','🦄','🐴'] },
+];
+
+function EmojiPicker({ onSelect }) {
+  const [tab, setTab] = useState(0);
+  return (
+    <div className="absolute bottom-[calc(100%+6px)] left-0 z-50 bg-white border border-slate-200 rounded-xl shadow-lg w-[272px] overflow-hidden">
+      <div className="flex border-b border-slate-100 px-1 pt-1 gap-0.5">
+        {EMOJI_TABS.map((t, i) => (
+          <button key={i} onClick={() => setTab(i)}
+            className={`flex-1 py-1.5 text-[17px] rounded-lg transition-colors ${i === tab ? 'bg-slate-100' : 'hover:bg-slate-50'}`}>
+            {t.icon}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-8 gap-0.5 p-2 max-h-[156px] overflow-y-auto">
+        {EMOJI_TABS[tab].emojis.map(e => (
+          <button key={e} onClick={() => onSelect(e)}
+            className="text-[18px] leading-none p-1.5 rounded-lg hover:bg-slate-100 transition-colors text-center">
+            {e}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Communication({ student }) {
   const [conversations, setConversations] = useState([]);
   const [selected, setSelected]           = useState(null);
@@ -30,6 +62,7 @@ export default function Communication({ student }) {
   const [searchResults, setSearchResults] = useState([]);
   const [typing, setTyping]               = useState(false);
   const [onlineUsers, setOnlineUsers]     = useState(new Set());
+  const [showEmoji, setShowEmoji]         = useState(false);
 
   const messagesEndRef = useRef(null);
   const socketRef      = useRef(null);
@@ -328,9 +361,21 @@ export default function Communication({ student }) {
 
             {/* Input */}
             <div className="px-4 py-3 border-t border-slate-200 flex items-center gap-2.5 bg-white flex-shrink-0">
-              <button className="w-9 h-9 border border-slate-200 rounded-lg bg-white flex items-center justify-center cursor-pointer text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 flex-shrink-0">
-                <Paperclip size={16} />
-              </button>
+              <div className="relative flex-shrink-0">
+                <button
+                  onClick={() => setShowEmoji(p => !p)}
+                  className={`w-9 h-9 border border-slate-200 rounded-lg bg-white flex items-center justify-center cursor-pointer text-[18px] transition-all ${showEmoji ? 'bg-indigo-50 border-indigo-300' : 'hover:bg-slate-100'}`}
+                  title="Emoji"
+                >
+                  😊
+                </button>
+                {showEmoji && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowEmoji(false)} />
+                    <EmojiPicker onSelect={e => setInput(p => p + e)} />
+                  </>
+                )}
+              </div>
               <textarea
                 className="flex-1 border-[1.5px] border-slate-200 rounded-[10px] px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all resize-none max-h-[100px] focus:border-indigo-600"
                 placeholder={`Message ${selected.name}...`}
