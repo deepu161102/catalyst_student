@@ -71,7 +71,7 @@ export default function App() {
   };
 
   return (
-    <Layout page={page} onNavigate={setPage} onLogout={handleLogout}>
+    <Layout page={page} onNavigate={setPage} onLogout={handleLogout} student={student}>
       {renderPage()}
     </Layout>
   );

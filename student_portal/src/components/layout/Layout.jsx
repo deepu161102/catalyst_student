@@ -19,7 +19,7 @@ function formatDate() {
   });
 }
 
-export default function Layout({ page, onNavigate, onLogout, children }) {
+export default function Layout({ page, onNavigate, onLogout, student, children }) {
   const [collapsed, setCollapsed] = useState(false);
   const { title, subtitle } = PAGE_META[page] ?? PAGE_META.dashboard;
 
@@ -31,6 +31,7 @@ export default function Layout({ page, onNavigate, onLogout, children }) {
         onLogout={onLogout}
         collapsed={collapsed}
         onToggle={() => setCollapsed(c => !c)}
+        student={student}
       />
 
       <main

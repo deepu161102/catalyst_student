@@ -9,7 +9,6 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { currentStudent } from '../../data/mockData';
 import catalystLogo from '../../assets/catalyst-logo.png';
 
 const NAV_ITEMS = [
@@ -25,7 +24,7 @@ function getInitials(name) {
   return name.split(' ').map((n) => n[0]).join('');
 }
 
-export default function Sidebar({ active, onNavigate, onLogout, collapsed, onToggle }) {
+export default function Sidebar({ active, onNavigate, onLogout, collapsed, onToggle, student }) {
   return (
     <aside
       className="bg-[#0f172a] flex flex-col fixed top-0 left-0 h-screen z-[100] transition-all duration-300 overflow-hidden"
@@ -48,12 +47,12 @@ export default function Sidebar({ active, onNavigate, onLogout, collapsed, onTog
       {/* Logged-in user */}
       <div className={`border-b border-[#1e293b] flex items-center py-4 ${collapsed ? 'justify-center px-2' : 'gap-2.5 px-5'}`}>
         <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-violet-500 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
-          {getInitials(currentStudent.name)}
+          {getInitials(student?.name || '')}
         </div>
         {!collapsed && (
           <div className="overflow-hidden">
             <div className="text-[13px] font-semibold text-white whitespace-nowrap overflow-hidden text-ellipsis">
-              {currentStudent.name}
+              {student?.name || ''}
             </div>
             <div className="text-[11px] text-slate-500 uppercase tracking-[0.5px]">Student</div>
           </div>
